@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.11.6
-	github.com/dewald-L/dock v0.0.0-20261113063804-84f5413ef42f
+	github.com/dewald-L/dock v0.0.0-20261113073416-9334fe79ac60
 )
 
 require (

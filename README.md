@@ -69,7 +69,12 @@ dock plugin install github.com/dewald-L/lazysheet/dockplugin
 dock plugin install --path . github.com/dewald-L/lazysheet/dockplugin
 ```
 
-Then run `dock lazysheet`, or open it from dock's launcher or palette. Inside
+Then run `dock lazysheet`, or open it from dock's home screen (its number key,
+or select its block and press enter) or palette. On dock's home screen its
+block shows today's and this week's hours against 40h, plus a bar per day
+(one step per hour, up to 8h): `Today 1h15 · this week 18h15 / 40h` and
+`Mo█ Tu▆ We▂ Th· Fr· Sa· Su·`. The block gets a warning dot once today passes
+8h. Without an osheet config it says to run `osheet --setup`. Inside
 dock:
 
 - It reads and writes the same osheet files as standalone. dock's plugin
@@ -206,9 +211,10 @@ sandboxed dock (`DOCK_CONFIG_DIR`, `DOCK_DATA_DIR`, `XDG_CACHE_HOME`).
 ```
 main.go              entry point (runs the dock plugin standalone via
                        plugin.RunStandalone)
-dockplugin/          the dock plugin: manifest and embedding
+dockplugin/          the dock plugin: manifest, embedding, home screen Summary
 internal/sheet/      osheet's config, paths, durations and Excel I/O, ported
                        from osheet (zip + XML text edits, standard library only)
+internal/sheet/sheettest/  synthetic template for tests
 internal/ui/         Bubble Tea model: panels, entry form, hours summary
 e2e/                 pty harness and end-to-end scenarios
 testdata/            bridge to osheet's Python for the interop tests

@@ -26,7 +26,14 @@ python3 -I e2e/run.py --dock   # pty end-to-end, standalone and in a dock sandbo
 - `main.go` runs `dockplugin.Plugin{Standalone: true}` through
   `plugin.RunStandalone`, so standalone and dock share one code path.
 - `dockplugin/`: id `lazysheet`, DisplayFull, Persistent, min 90x24. No data
-  dir: the files are osheet's.
+  dir: the files are osheet's. `summary.go` is dock's home screen
+  `plugin.Summarizer` (on the Plugin value): today/week hours vs 40h, a day
+  bar, warn past 8h today, an `osheet --setup` line without config. It runs
+  off the UI goroutine, possibly while lazysheet is open, so it only reads
+  (`sheet.LoadConfig`, `EntriesBetween`) and keeps no state. Tests call
+  `summary(today)` with a fixed date.
+- `internal/sheet/sheettest`: the synthetic template (`WriteTemplate`) used by
+  the sheet and dockplugin tests.
 - `internal/sheet/`: osheet's config (`config.go`), dates, grouping, paths and
   durations (`dates.go`), the xlsx port (`xlsx.go`) and entries, save, update,
   move, delete and the hours summary (`entries.go`). No UI concerns.
