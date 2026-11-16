@@ -60,7 +60,7 @@ descriptions, and `wl-copy`, `xclip` or `xsel` to copy the folder path.
 ### Inside dock
 
 lazysheet is also a plugin for the [dock](https://github.com/dewald-L/dock)
-terminal host (plugin id `lazysheet`, full-screen tab, at least 90×24).
+terminal host (plugin id `lazysheet`, full-screen tab, at least 70×18).
 Install it into dock with:
 
 ```sh
@@ -93,10 +93,10 @@ dock:
 ## Layout
 
 ```
-╭─ [1] Days ──────────╮╭─ [3] Entry / Hours / New entry ──────╮
-│ the selected week,  ││ the selected entry's details, the    │
-│ Mon–Sun, with a bar ││ Hours table (t/w/m), or the entry    │
-│ per day             ││ form while adding or editing         │
+╭─ [1] Days ──────────╮╭─ [3] Entry / Hours ──────────────────╮
+│ the selected week,  ││ the selected entry's details, or the │
+│ Mon–Sun, with a bar ││ Hours table (t/w/m)                  │
+│ per day             ││                                      │
 ╰─────────────────────╯│                                      │
 ╭─ [2] Entries ───────╮│                                      │
 │ the week's entries  ││                                      │
@@ -114,11 +114,11 @@ dock:
   file, then the current period's timesheet folder), or, after `t`, `w` or `m`,
   osheet's `--hours` table for today, this week or this month, busiest project
   first. Moving in Entries or Days, or `esc` in Hours, brings the entry back.
-  While you add or edit an entry, the form takes the pane's place.
+  The entry form (`n`, `e`) pops up as a modal over all three panels.
 
 ## Logging an entry
 
-`n` opens the form in the Entry panel. It asks osheet's questions in order and
+`n` opens the form as a popup. It asks osheet's questions in order and
 fills in the fields above as you answer:
 
 1. **Day**: any day of the current week, each shown with its logged time and

@@ -55,16 +55,36 @@ func (a *App) renderPanels() string {
 		a.renderEntries(lw, h-daysH),
 	}, "\n")
 
-	var right string
-	switch {
-	case a.form != nil:
-		right = a.renderForm(rw, h)
-	case a.showHours:
+	right := a.renderDetail(rw, h)
+	if a.showHours {
 		right = a.renderHours(rw, h)
-	default:
-		right = a.renderDetail(rw, h)
 	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	body := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	if a.form == nil {
+		return body
+	}
+	mw, mh := a.modalSize()
+	return overlay(body, a.renderForm(mw, mh), (a.width-mw)/2, (h-mh)/2)
+}
+
+// modalSize is the entry form's size: wide enough for its fields, tall
+// enough for its question and menu, within the screen.
+func (a *App) modalSize() (int, int) {
+	w := min(formWidth, a.width-2)
+	return max(w, 10), max(min(a.formHeight(w), a.bodyHeight()), 3)
+}
+
+// overlay draws fg over bg with its top-left corner at column x, row y.
+func overlay(bg, fg string, x, y int) string {
+	lines := strings.Split(bg, "\n")
+	for i, f := range strings.Split(fg, "\n") {
+		r := y + i
+		if r < 0 || r >= len(lines) {
+			continue
+		}
+		lines[r] = ansi.Truncate(lines[r], x, "") + "\x1b[0m" + f + "\x1b[0m" + ansi.TruncateLeft(lines[r], x+ansi.StringWidth(f), "")
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (a *App) panelTitle(id panelID, extra string) string {
@@ -148,6 +168,8 @@ func scrollWindow(lines []string, cursor, n int) []string {
 
 // --- right column ------------------------------------------------------------------
 
+const formWidth = 70 // the entry form modal
+
 const labelW = 11 // the widest field label, "Description"
 
 // fieldLine renders "  Label        value  (note)", wrapping a long value
@@ -187,6 +209,22 @@ func (a *App) fieldLines(marker string, label string, text string, extra string,
 		}
 	}
 	return out
+}
+
+// formHeight is the height the entry form (w wide) would like: its fields,
+// the question, and up to 10 menu options or the input and its error.
+func (a *App) formHeight(w int) int {
+	f := a.form
+	n := 2 + fieldCount + 2 // border, fields, gap, question
+	if f.values[fDescription].text != "" {
+		n += len(wrapText(f.values[fDescription].text, max(w-4-labelW-4, 10))) - 1
+	}
+	if f.isMenu {
+		n += min(len(f.options), 10)
+	} else {
+		n += 2
+	}
+	return n + 1 // a note on its own line
 }
 
 func (a *App) renderDetail(w, h int) string {

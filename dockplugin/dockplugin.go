@@ -33,8 +33,8 @@ func (Plugin) Manifest() plugin.Manifest {
 		Version:     "0.1.0",
 		Display:     plugin.DisplayFull,
 		Lifecycle:   plugin.Persistent,
-		MinWidth:    90,
-		MinHeight:   24,
+		MinWidth:    70,
+		MinHeight:   18,
 	}
 }
 

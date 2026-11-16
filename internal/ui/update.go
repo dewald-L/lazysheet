@@ -173,7 +173,7 @@ func (a *App) reload() tea.Cmd { return a.load() }
 
 func (a *App) sizeInput() {
 	if a.form != nil {
-		a.form.input.Width = max(a.rightWidth()-10, 10) // inside the box, after "  ❯ ", with room for the cursor
+		a.form.input.Width = max(min(formWidth, a.width-2)-10, 10) // inside the box, after "  ❯ ", with room for the cursor
 	}
 }
 

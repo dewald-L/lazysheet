@@ -87,7 +87,7 @@ func key(a *App, keys ...string) {
 func TestViewFitsEverySize(t *testing.T) {
 	for _, embedded := range []bool{true, false} {
 		a := newTestApp(t, embedded)
-		sizes := [][2]int{{90, 24}, {100, 30}, {120, 40}, {200, 60}}
+		sizes := [][2]int{{70, 18}, {90, 24}, {100, 30}, {120, 40}, {200, 60}}
 		for _, s := range sizes {
 			checkFits(t, a, s[0], s[1], "browse")
 		}
@@ -105,13 +105,15 @@ func TestViewFitsEverySize(t *testing.T) {
 			key(a, p)
 			checkFits(t, a, 90, 24, "hours "+p)
 		}
-		key(a, "n")
-		checkFits(t, a, 90, 24, "form: day")
-		key(a, "enter", "2")
-		checkFits(t, a, 90, 24, "form: category")
-		key(a, "enter")
-		checkFits(t, a, 90, 24, "form: time")
-		key(a, "esc")
+		for _, sz := range [][2]int{{70, 18}, {90, 24}} {
+			key(a, "n")
+			checkFits(t, a, sz[0], sz[1], "form: day")
+			key(a, "enter", "2")
+			checkFits(t, a, sz[0], sz[1], "form: category")
+			key(a, "enter")
+			checkFits(t, a, sz[0], sz[1], "form: time")
+			key(a, "esc")
+		}
 	}
 }
 

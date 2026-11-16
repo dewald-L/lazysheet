@@ -25,7 +25,7 @@ python3 -I e2e/run.py --dock   # pty end-to-end, standalone and in a dock sandbo
   After changing the plugin, run `dock build`.
 - `main.go` runs `dockplugin.Plugin{Standalone: true}` through
   `plugin.RunStandalone`, so standalone and dock share one code path.
-- `dockplugin/`: id `lazysheet`, DisplayFull, Persistent, min 90x24. No data
+- `dockplugin/`: id `lazysheet`, DisplayFull, Persistent, min 70x18. No data
   dir: the files are osheet's. `summary.go` is dock's home screen
   `plugin.Summarizer` (on the Plugin value): today/week hours vs 40h,
   `Widgets` (a text headline and a 7-bar `plugin.BarChart` against the 8h
@@ -86,7 +86,8 @@ python3 -I e2e/run.py --dock   # pty end-to-end, standalone and in a dock sandbo
 
 ## Gotchas
 
-- Three panels: Days, Entries and the right pane (entry detail, or the Hours
+- The entry form is a centred modal drawn over the panels (`overlay`,
+  `modalSize` in view.go). Three panels: Days, Entries and the right pane (entry detail, or the Hours
   table when `showHours`; `t`/`w`/`m` set it, moving in Entries/Days or `esc`
   clears it). `[`/`]` page `weekIdx` through `weeks()`; Days and Entries both
   show that week.
