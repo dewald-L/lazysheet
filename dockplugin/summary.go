@@ -17,8 +17,9 @@ const (
 )
 
 // Summary implements plugin.Summarizer for dock's home screen: today's and
-// this week's hours plus a bar per day. It only reads osheet's config and
-// this week's files, so it is safe to call while lazysheet is open.
+// this week's hours plus a bar chart of hours per day. It only reads
+// osheet's config and this week's files, so it is safe to call while
+// lazysheet is open.
 func (Plugin) Summary(plugin.Context) (plugin.Summary, error) {
 	return summary(sheet.Today())
 }
@@ -45,10 +46,16 @@ func summary(today time.Time) (plugin.Summary, error) {
 		total += m
 	}
 	todayMin := days[sheet.Weekday(today)]
-	s := plugin.Summary{Lines: []string{
-		fmt.Sprintf("Today %s · this week %s / %dh", sheet.FmtMinutes(todayMin), sheet.FmtMinutes(total), weekTarget/60),
-		dayBar(days),
-	}}
+	headline := fmt.Sprintf("Today %s · this week %s / %dh", sheet.FmtMinutes(todayMin), sheet.FmtMinutes(total), weekTarget/60)
+	// Lines is the text fallback (tiny terminals, short screens); Widgets is
+	// what dock draws when it has room.
+	s := plugin.Summary{
+		Lines: []string{headline, dayBar(days)},
+		Widgets: []plugin.Widget{
+			plugin.Text(headline, plugin.LevelNone),
+			dayChart(days, sheet.Weekday(today)),
+		},
+	}
 	if todayMin > dayTarget {
 		s.Level = plugin.LevelWarn
 	}
@@ -72,4 +79,22 @@ func dayBar(days [7]int) string {
 		parts[i] = dayNames[i] + g
 	}
 	return strings.Join(parts, " ")
+}
+
+// dayChart is a bar chart of minutes per day against the day target (a full
+// bar is 8h). Today is highlighted; a day past the target is drawn in the
+// warn colour.
+func dayChart(days [7]int, today int) plugin.Widget {
+	bars := make([]plugin.Bar, 7)
+	for i, m := range days {
+		b := plugin.Bar{Label: dayNames[i], Value: float64(m), Caption: "·", Focus: i == today}
+		if m > 0 {
+			b.Caption = sheet.FmtMinutes(m)
+		}
+		if m > dayTarget {
+			b.Level = plugin.LevelWarn
+		}
+		bars[i] = b
+	}
+	return plugin.BarChart(4, dayTarget, bars...)
 }

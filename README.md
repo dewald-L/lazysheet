@@ -71,10 +71,11 @@ dock plugin install --path . github.com/dewald-L/lazysheet/dockplugin
 
 Then run `dock lazysheet`, or open it from dock's home screen (its number key,
 or select its block and press enter) or palette. On dock's home screen its
-block shows today's and this week's hours against 40h, plus a bar per day
-(one step per hour, up to 8h): `Today 1h15 · this week 18h15 / 40h` and
-`Mo█ Tu▆ We▂ Th· Fr· Sa· Su·`. The block gets a warning dot once today passes
-8h. Without an osheet config it says to run `osheet --setup`. Inside
+block shows today's and this week's hours against 40h
+(`Today 1h15 · this week 18h15 / 40h`) and a bar chart of hours per day against
+the 8h target, with today highlighted and days past 8h in the warning colour. The
+block gets a warning dot once today passes 8h. On a screen too short or narrow for the
+chart it falls back to one text line of bars (`Mo█ Tu▆ We▂ Th· Fr· Sa· Su·`). Without an osheet config it says to run `osheet --setup`. Inside
 dock:
 
 - It reads and writes the same osheet files as standalone. dock's plugin

@@ -163,3 +163,54 @@ func TestDayBar(t *testing.T) {
 		t.Fatalf("dayBar = %q, want %q", got, want)
 	}
 }
+
+func TestSummaryWidgets(t *testing.T) {
+	cfg := setup(t, "week")
+	wed := sheet.Date(2026, 11, 11)
+	logTime(t, cfg, sheet.Date(2026, 11, 9), 540) // Mon: past the target
+	logTime(t, cfg, sheet.Date(2026, 11, 10), 240)
+	logTime(t, cfg, wed, 75)
+
+	s, err := summary(wed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Widgets) != 2 || s.Widgets[0].Kind != plugin.KindText || s.Widgets[0].Text != s.Lines[0] {
+		t.Fatalf("a headline text widget, same as the first line: %+v", s.Widgets)
+	}
+	c := s.Widgets[1]
+	if c.Kind != plugin.KindBarChart || c.Max != dayTarget || len(c.Bars) != 7 {
+		t.Fatalf("a 7 bar chart against the 8h target: %+v", c)
+	}
+	for i, b := range c.Bars {
+		if b.Label != dayNames[i] || b.Focus != (i == 2) {
+			t.Errorf("bar %d: %+v (only Wednesday is today)", i, b)
+		}
+	}
+	if b := c.Bars[0]; b.Value != 540 || b.Caption != "9h00" || b.Level != plugin.LevelWarn {
+		t.Errorf("a day past 8h is drawn in the warn colour: %+v", b)
+	}
+	if b := c.Bars[2]; b.Value != 75 || b.Caption != "1h15" || b.Level != plugin.LevelNone {
+		t.Errorf("today: %+v", b)
+	}
+	if b := c.Bars[3]; b.Value != 0 || b.Caption != "·" {
+		t.Errorf("an empty day: %+v", b)
+	}
+	if s.Level != plugin.LevelNone {
+		t.Errorf("only today past 8h warns the block: %v", s.Level)
+	}
+	if got := s.Clean(); len(got.Widgets) != 2 || got.Widgets[1].Rows() != c.Rows() {
+		t.Errorf("Clean must not alter the widgets: %+v", got.Widgets)
+	}
+
+	logTime(t, cfg, wed, 420) // today is now 8h15
+	if s, _ = summary(wed); s.Level != plugin.LevelWarn || s.Widgets[1].Bars[2].Level != plugin.LevelWarn || !s.Widgets[1].Bars[2].Focus {
+		t.Errorf("today past 8h keeps the block warn level and the bar stays highlighted: %+v", s)
+	}
+}
+
+func TestSummaryNoConfigHasNoWidgets(t *testing.T) {
+	if s, _ := (Plugin{}).Summary(plugin.Context{}); len(s.Widgets) != 0 {
+		t.Fatalf("the setup hint is text only: %+v", s)
+	}
+}
