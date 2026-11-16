@@ -95,7 +95,7 @@ func TestViewFitsEverySize(t *testing.T) {
 			a.focus = p
 			checkFits(t, a, 90, 24, "panel "+panelNames[p])
 		}
-		key(a, "3", "d")
+		key(a, "2", "d")
 		checkFits(t, a, 90, 24, "confirm delete")
 		key(a, "n") // keeps it
 		key(a, "?")
@@ -216,7 +216,7 @@ func TestSkippedQuestionsAndPrev(t *testing.T) {
 
 func TestEditPrefillsAndAsksEverything(t *testing.T) {
 	a := newTestApp(t, true)
-	key(a, "3", "G") // oldest entry this week: Monday's first row
+	key(a, "2", "G") // oldest entry this week: Monday's first row
 	e := a.selectedEntry()
 	if e == nil || e.Row != 1 {
 		t.Fatalf("selected %+v", e)
@@ -250,5 +250,34 @@ func TestWeekLabels(t *testing.T) {
 	}
 	if got := weekLabel(sheet.Date(2026, 10, 26)); got != "26 Oct–01 Nov" {
 		t.Errorf("weekLabel %q", got)
+	}
+}
+
+func TestWeekPagingAndRightPane(t *testing.T) {
+	a := newTestApp(t, true)
+	a.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	cur := a.weekIdx
+	key(a, "[")
+	if a.weekIdx != cur-1 && cur > 0 {
+		t.Errorf("[ should page to the previous week: %d -> %d", cur, a.weekIdx)
+	}
+	key(a, "]", "]", "]")
+	if a.weekIdx != len(a.weeks())-1 {
+		t.Errorf("] should stop at the last week: %d of %d", a.weekIdx, len(a.weeks()))
+	}
+	if strings.Contains(ansi.Strip(a.View()), "Weeks") {
+		t.Error("there is no Weeks panel any more")
+	}
+	key(a, "t")
+	if v := ansi.Strip(a.View()); !a.showHours || !strings.Contains(v, "[3] Hours") {
+		t.Error("t should show Hours in the right pane")
+	}
+	key(a, "2", "j")
+	if a.showHours {
+		t.Error("moving in Entries should show the entry again")
+	}
+	key(a, "w", "3", "esc")
+	if a.showHours || a.focus != panelEntries {
+		t.Error("esc in Hours should go back to the entry")
 	}
 }

@@ -112,7 +112,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.prev = &ans
 		}
 		a.selectRow = &rowKey{msg.path, msg.row}
-		a.focus = panelEntries
+		a.focus, a.showHours = panelEntries, false
 		a.status = fmt.Sprintf("%s %s → %s", msg.verb, msg.summary, sheet.TildePath(msg.path))
 		return a, a.reload()
 
@@ -220,13 +220,19 @@ func (a *App) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "shift+tab":
 		a.focus = (a.focus + panelCount - 1) % panelCount
 		return a, nil
-	case "1", "2", "3", "4":
+	case "1", "2", "3":
 		a.focus = panelID(k[0] - '1')
+		return a, nil
+	case "[":
+		a.setWeek(a.weekIdx - 1)
+		return a, nil
+	case "]":
+		a.setWeek(a.weekIdx + 1)
 		return a, nil
 	case "n":
 		var day *time.Time
 		if a.focus == panelDays && a.dayPicked { // a day picked in Days beats the previous entry's
-			d := a.currentWeek()[a.dayIdx]
+			d := a.shownWeek()[a.dayIdx]
 			day = &d
 		}
 		a.dayPicked = false
@@ -238,7 +244,7 @@ func (a *App) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			a.status = "No entry selected"
 			return a, nil
 		}
-		a.confirmDelete = true
+		a.confirmDelete, a.showHours = true, false // the prompt is in the entry
 		return a, nil
 	case "y":
 		return a, a.copyFolder()
@@ -258,12 +264,10 @@ func (a *App) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch a.focus {
 	case panelDays:
 		return a.handleDaysKey(k)
-	case panelWeeks:
-		return a.handleWeeksKey(k)
 	case panelEntries:
 		return a.handleEntriesKey(k)
-	case panelHours:
-		return a.handleHoursKey(k)
+	case panelPane:
+		return a.handlePaneKey(k)
 	}
 	return a, nil
 }
@@ -296,11 +300,11 @@ func (a *App) handleDaysKey(k string) (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
-// showDay opens the current week in Entries, on the selected day's newest
-// entry.
+// showDay selects the shown day's newest entry in Entries (and shows it in
+// the right pane).
 func (a *App) showDay() {
-	a.weekIdx = a.currentWeekIdx()
-	day := a.currentWeek()[a.dayIdx]
+	a.showHours = false
+	day := a.shownWeek()[a.dayIdx]
 	for i, e := range a.weekEntries() {
 		if e.Date.Equal(day) {
 			a.entryIdx = i
@@ -309,35 +313,30 @@ func (a *App) showDay() {
 	}
 }
 
-func (a *App) handleWeeksKey(k string) (tea.Model, tea.Cmd) {
-	if i, ok := move(k, a.weekIdx, len(a.weeks())); ok {
-		if i != a.weekIdx {
-			a.weekIdx, a.entryIdx = i, 0
-		}
-		return a, nil
-	}
-	if k == "enter" || k == "l" || k == "right" {
-		a.focus = panelEntries
-	}
-	return a, nil
-}
-
 func (a *App) handleEntriesKey(k string) (tea.Model, tea.Cmd) {
 	if i, ok := move(k, a.entryIdx, len(a.weekEntries())); ok {
-		a.entryIdx = i
+		a.entryIdx, a.showHours = i, false
 		return a, nil
 	}
 	switch k {
 	case "enter":
 		return a.startEdit()
 	case "h", "left", "esc":
-		a.focus = panelWeeks
+		a.focus = panelDays
 	}
 	return a, nil
 }
 
-func (a *App) handleHoursKey(k string) (tea.Model, tea.Cmd) {
+func (a *App) handlePaneKey(k string) (tea.Model, tea.Cmd) {
+	if !a.showHours { // the entry: nothing to move in
+		if k == "esc" || k == "h" || k == "left" {
+			a.focus = panelEntries
+		}
+		return a, nil
+	}
 	switch k {
+	case "esc":
+		a.showHours, a.focus = false, panelEntries
 	case "left", "h":
 		a.cyclePeriod(-1)
 	case "right", "l":
@@ -351,7 +350,7 @@ func (a *App) handleHoursKey(k string) (tea.Model, tea.Cmd) {
 }
 
 func (a *App) setPeriod(p string) {
-	a.period, a.sumScroll = p, 0
+	a.period, a.sumScroll, a.showHours = p, 0, true
 }
 
 func (a *App) cyclePeriod(d int) {

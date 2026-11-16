@@ -49,29 +49,21 @@ func (a *App) renderPanels() string {
 	h := a.bodyHeight()
 	lw, rw := a.leftWidth(), a.rightWidth()
 
-	daysH := 9
-	weeksH := len(a.weeks()) + 2
-	entriesH := h - daysH - weeksH
-	if entriesH < 4 { // squeeze the weeks list before the entries
-		weeksH = max(h-daysH-4, 3)
-		entriesH = h - daysH - weeksH
-	}
+	daysH := min(9, h-4)
 	left := strings.Join([]string{
 		a.renderDays(lw, daysH),
-		a.renderWeeks(lw, weeksH),
-		a.renderEntries(lw, entriesH),
+		a.renderEntries(lw, h-daysH),
 	}, "\n")
 
-	sumH := a.summaryHeight(h)
-	if a.form != nil {
-		// the form comes first: Hours shrinks, or goes, to fit its menu
-		sumH = min(sumH, h-a.formHeight())
-		if sumH < 5 {
-			return lipgloss.JoinHorizontal(lipgloss.Top, left, a.renderForm(rw, h))
-		}
-		return lipgloss.JoinHorizontal(lipgloss.Top, left, a.renderForm(rw, h-sumH)+"\n"+a.renderHours(rw, sumH))
+	var right string
+	switch {
+	case a.form != nil:
+		right = a.renderForm(rw, h)
+	case a.showHours:
+		right = a.renderHours(rw, h)
+	default:
+		right = a.renderDetail(rw, h)
 	}
-	right := a.renderDetail(rw, h-sumH) + "\n" + a.renderHours(rw, sumH)
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 }
 
@@ -88,7 +80,7 @@ func (a *App) panelTitle(id panelID, extra string) string {
 func (a *App) renderDays(w, h int) string {
 	focused := a.focus == panelDays && a.form == nil
 	mins := a.minutesByDay(nil)
-	week := a.currentWeek()
+	week := a.shownWeek()
 	total := 0
 	inner := w - 4
 	cells := min(barCells, inner-19)
@@ -115,45 +107,6 @@ func (a *App) renderDays(w, h int) string {
 		lines = append(lines, line)
 	}
 	return a.st.box(a.panelTitle(panelDays, weekLabel(week[0])+" · "+sheet.FmtMinutes(total)), lines, w, h, focused)
-}
-
-func (a *App) renderWeeks(w, h int) string {
-	focused := a.focus == panelWeeks && a.form == nil
-	weeks := a.weeks()
-	first, last := sheet.MonthRange(a.today)
-	monthTotal := 0
-	for _, e := range a.entries {
-		if !e.Date.Before(first) && !e.Date.After(last) {
-			monthTotal += e.Total()
-		}
-	}
-	cur := sheet.Monday(a.today)
-	lines := make([]string, 0, len(weeks))
-	for i, mon := range weeks {
-		es := entriesInWeek(a.newest, mon)
-		total := 0
-		for _, e := range es {
-			total += e.Total()
-		}
-		text := fmt.Sprintf("%-13s  %-10s %6s", weekLabel(mon), entriesText(len(es)), sheet.FmtMinutes(total))
-		st := a.st.text
-		if len(es) == 0 {
-			st = a.st.muted
-		}
-		if mon.Equal(cur) {
-			st = a.st.today
-		}
-		if i == a.weekIdx {
-			if focused {
-				st = st.Inherit(a.st.cursor)
-			} else {
-				st = st.Inherit(a.st.cursorDim)
-			}
-		}
-		lines = append(lines, st.Render(text))
-	}
-	lines = scrollWindow(lines, a.weekIdx, h-2)
-	return a.st.box(a.panelTitle(panelWeeks, a.today.Format("January")+" · "+sheet.FmtMinutes(monthTotal)), lines, w, h, focused)
 }
 
 func (a *App) renderEntries(w, h int) string {
@@ -236,22 +189,6 @@ func (a *App) fieldLines(marker string, label string, text string, extra string,
 	return out
 }
 
-// formHeight is the height the entry form would like: its fields, the
-// question, and up to 10 menu options or the input and its error.
-func (a *App) formHeight() int {
-	f := a.form
-	n := 2 + fieldCount + 2 // border, fields, gap, question
-	if f.values[fDescription].text != "" {
-		n += len(wrapText(f.values[fDescription].text, max(a.rightWidth()-4-labelW-4, 10))) - 1
-	}
-	if f.isMenu {
-		n += min(len(f.options), 10)
-	} else {
-		n += 2
-	}
-	return n + 1 // a note on its own line
-}
-
 func (a *App) renderDetail(w, h int) string {
 	inner := w - 4
 	var lines []string
@@ -280,7 +217,7 @@ func (a *App) renderDetail(w, h int) string {
 		}
 	}
 	lines = append(lines, "", a.folderLine())
-	return a.st.box(" Entry ", lines, w, h, a.confirmDelete)
+	return a.st.box(a.panelTitle(panelPane, ""), lines, w, h, a.focus == panelPane || a.confirmDelete)
 }
 
 func (a *App) folderLine() string {
@@ -419,16 +356,8 @@ func (a *App) summaryRows() []sumRow {
 
 func (a *App) summaryLineCount() int { return len(a.summaryRows()) }
 
-func (a *App) summaryHeight(bodyH int) int {
-	need := len(a.summaryRows()) + 2 // period line and header
-	if need == 2 {
-		need = 3
-	}
-	return min(max(need+2, 6), max(bodyH*2/5, 6))
-}
-
 func (a *App) renderHours(w, h int) string {
-	focused := a.focus == panelHours && a.form == nil
+	focused := a.focus == panelPane && a.form == nil
 	_, _, name, span := a.periodRange()
 	inner := w - 4
 	var tabs []string
@@ -445,7 +374,7 @@ func (a *App) renderHours(w, h int) string {
 	if len(rows)+2 > h-2 { // tight: the period is in the title anyway
 		lines = nil
 	}
-	title := a.panelTitle(panelHours, name+" · "+span)
+	title := fmt.Sprintf(" [3] Hours · %s · %s ", name, span)
 	if len(rows) == 0 {
 		what := "this " + a.period
 		if a.period == periodDay {
@@ -547,13 +476,15 @@ func (a *App) helpPairs() []kv {
 	var pairs []kv
 	switch a.focus {
 	case panelDays:
-		pairs = []kv{{"j/k", "day"}, {"n", "new on day"}, {"y", "copy folder"}}
-	case panelWeeks:
-		pairs = []kv{{"j/k", "week"}, {"n", "new"}, {"t/w/m", "hours"}}
+		pairs = []kv{{"j/k", "day"}, {"[/]", "week"}, {"n", "new on day"}}
 	case panelEntries:
 		pairs = []kv{{"e", "edit"}, {"d", "delete"}, {"n", "new"}}
-	case panelHours:
-		pairs = []kv{{"←/→", "period"}, {"j/k", "scroll"}, {"n", "new"}}
+	case panelPane:
+		if a.showHours {
+			pairs = []kv{{"←/→", "period"}, {"j/k", "scroll"}, {"esc", "entry"}}
+		} else {
+			pairs = []kv{{"e", "edit"}, {"t/w/m", "hours"}, {"n", "new"}}
+		}
 	}
 	return append(pairs, kv{"tab", "panel"}, kv{"?", "help"}, kv{"q", a.quitWord()})
 }
@@ -567,10 +498,10 @@ func (a *App) quitWord() string {
 
 func (a *App) renderHelp() string {
 	sections := []struct{ title, body string }{
-		{"Panels", "1-4 / tab / shift+tab   jump to / cycle Days, Weeks, Entries, Hours\nj/k ↑/↓  g/G           move, top, bottom\nenter / l              Days, Weeks: show in Entries · Entries: edit\nh / esc                Entries: back to Weeks"},
+		{"Panels", "1-3 / tab / shift+tab   jump to / cycle Days, Entries, Entry (or Hours)\nj/k ↑/↓  g/G           move, top, bottom\n[ / ]                  previous / next week (Days and Entries)\nenter / l              Days: show in Entries · Entries: edit\nh / esc                Entries: back to Days · Hours: back to the entry"},
 		{"Entries", "n   new entry (on the selected day in Days); starts from the\n    last entry's day, project, type, location and sentiment\ne   edit the selected entry (every question is asked)\nd   delete the selected entry (asks y/N)"},
 		{"Entry form", "j/k enter   choose · 1-9 pick by number\nenter       next question; the last one saves\nshift+tab   back to the previous question\nctrl+e      description in $EDITOR\nesc         cancel, nothing is saved"},
-		{"Hours and folder", "t / w / m   hours today, this week, this month\n←/→         Hours: previous / next period\ny           copy the current timesheet folder's path\nr           reload from disk"},
+		{"Hours and folder", "t / w / m   hours today, this week, this month (in the right pane)\n←/→         Hours: previous / next period\ny           copy the current timesheet folder's path\nr           reload from disk"},
 		{"", "?   this help    q   " + a.quitWord() + " lazysheet"},
 	}
 	var b strings.Builder

@@ -86,6 +86,10 @@ python3 -I e2e/run.py --dock   # pty end-to-end, standalone and in a dock sandbo
 
 ## Gotchas
 
+- Three panels: Days, Entries and the right pane (entry detail, or the Hours
+  table when `showHours`; `t`/`w`/`m` set it, moving in Entries/Days or `esc`
+  clears it). `[`/`]` page `weekIdx` through `weeks()`; Days and Entries both
+  show that week.
 - `weeks()` lists whole Monday–Sunday weeks overlapping the month (osheet's
   `--list` clips them to the month); data is loaded from the first Monday to
   the end of the month or the current week, whichever is later.

@@ -79,7 +79,11 @@ func newInput() textinput.Model {
 // pre-selects its day, project, entry type, location and sentiment, like
 // osheet --multi; day (when not nil) pre-selects a day of the week.
 func (a *App) newForm(prev *sheet.Answers, day *time.Time) (*entryForm, tea.Cmd) {
-	f := &entryForm{asking: a.cfg.Asking(), days: sheet.WeekOf(a.today), input: newInput()}
+	days := sheet.WeekOf(a.today)
+	if day != nil {
+		days = sheet.WeekOf(*day) // a day of the week shown in Days
+	}
+	f := &entryForm{asking: a.cfg.Asking(), days: days, input: newInput()}
 	if prev != nil {
 		f.date, f.project, f.category = prev.Date, prev.Project, prev.Category
 		f.location, f.sentiment = prev.Location, prev.Sentiment

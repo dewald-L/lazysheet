@@ -20,13 +20,12 @@ type panelID int
 
 const (
 	panelDays panelID = iota
-	panelWeeks
 	panelEntries
-	panelHours
+	panelPane // the right pane: the selected entry, or the Hours table
 	panelCount
 )
 
-var panelNames = [panelCount]string{"Days", "Weeks", "Entries", "Hours"}
+var panelNames = [panelCount]string{"Days", "Entries", "Entry"}
 
 // Hours summary periods.
 const (
@@ -60,10 +59,11 @@ type App struct {
 	focus     panelID
 	dayIdx    int  // 0 = Monday of the current week
 	dayPicked bool // the user moved in Days since the last new entry
-	weekIdx   int  // index into weeks()
+	weekIdx   int  // index into weeks(): the week shown in Days and Entries
 	entryIdx  int  // index into the selected week's entries
 	sumScroll int
 	period    string
+	showHours bool // the right pane shows the Hours table instead of the entry
 
 	form          *entryForm
 	confirmDelete bool
@@ -183,7 +183,7 @@ func (a *App) applyLoaded(msg loadedMsg) {
 
 // --- derived data ----------------------------------------------------------------
 
-// weeks lists the Mondays of the weeks shown in the Weeks panel: every week
+// weeks lists the Mondays of the weeks you can page through with [ and ]: every week
 // that overlaps the month, up to the current week (and later ones that have
 // entries).
 func (a *App) weeks() []time.Time {
@@ -275,7 +275,16 @@ func (a *App) minutesByDay(skip *sheet.Entry) map[time.Time]int {
 	return out
 }
 
-func (a *App) currentWeek() []time.Time { return sheet.WeekOf(a.today) }
+// shownWeek is the week Days lists: the selected one.
+func (a *App) shownWeek() []time.Time { return sheet.WeekOf(a.selectedWeek()) }
+
+// setWeek pages to week i (clamped), keeping the day's weekday.
+func (a *App) setWeek(i int) {
+	i = clampIdx(i, len(a.weeks()))
+	if i != a.weekIdx {
+		a.weekIdx, a.entryIdx = i, 0
+	}
+}
 
 // periodRange is the hours summary's date range and heading.
 func (a *App) periodRange() (time.Time, time.Time, string, string) {
@@ -302,7 +311,7 @@ func weekTitle(today time.Time) string {
 	return fmt.Sprintf("%s-%s", mon.Format("02 Jan"), sun.Format("02 Jan"))
 }
 
-// weekLabel is a Weeks panel row's date range, e.g. "09–15 Nov".
+// weekLabel is a week's date range, e.g. "09–15 Nov".
 func weekLabel(mon time.Time) string {
 	sun := mon.AddDate(0, 0, 6)
 	if mon.Month() == sun.Month() {

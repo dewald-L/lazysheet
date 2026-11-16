@@ -44,7 +44,7 @@ func (a *App) runCommand(c commandMsg) (tea.Model, tea.Cmd) {
 	case periodDay, periodWeek, periodMonth:
 		a.setPeriod(c.name)
 		if a.form == nil {
-			a.focus = panelHours
+			a.focus = panelPane
 		}
 	case "copy":
 		return a, a.copyFolder()

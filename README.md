@@ -93,33 +93,28 @@ dock:
 ## Layout
 
 ```
-╭─ [1] Days ──────────╮╭─ Entry / New entry / Edit entry ─────╮
-│ this week, Mon–Sun  ││ the selected entry's details,        │
-│ with a bar per day  ││ or the entry form while adding or    │
-╰─────────────────────╯│ editing                              │
-╭─ [2] Weeks ─────────╮│                                      │
-│ weeks of the month  │╰──────────────────────────────────────╯
-╰─────────────────────╯╭─ [4] Hours ──────────────────────────╮
-╭─ [3] Entries ───────╮│ today / this week / this month, per  │
-│ the week's entries  ││ project and entry type, with         │
-│ newest first        ││ subtotals and a total                │
+╭─ [1] Days ──────────╮╭─ [3] Entry / Hours / New entry ──────╮
+│ the selected week,  ││ the selected entry's details, the    │
+│ Mon–Sun, with a bar ││ Hours table (t/w/m), or the entry    │
+│ per day             ││ form while adding or editing         │
+╰─────────────────────╯│                                      │
+╭─ [2] Entries ───────╮│                                      │
+│ the week's entries  ││                                      │
+│ newest first        ││                                      │
 ╰─────────────────────╯╰──────────────────────────────────────╯
 ```
 
-- **Days**: each day of the current week, with the time logged and a progress
-  bar towards 8 hours (green, then the theme's warning colour past 8 hours).
-  The title shows the week's total.
-- **Weeks**: every week that overlaps the current month, with its number of
-  entries and total. The title shows the month's total. Weeks are whole
-  Monday–Sunday weeks, so the first and last ones can include days of the
-  next or previous month (osheet's `--list` clips them to the month).
+- **Days**: each day of the selected week (this week to start with), with the
+  time logged and a progress bar towards 8 hours (green, then the theme's
+  warning colour past 8 hours). The title shows the week and its total. `[` and
+  `]` page to the previous and next week of the month.
 - **Entries**: the selected week's entries, newest first.
-- **Entry**: the selected entry in full: day, project, entry type, time,
-  location, sentiment, description, billable flag, ticket number and file,
-  followed by the current period's timesheet folder. While you add or edit an
-  entry, the form takes its place.
-- **Hours**: osheet's `--hours` table for today, this week or this month,
-  busiest project first.
+- **Entry / Hours**: the selected entry in full (day, project, entry type,
+  time, location, sentiment, description, billable flag, ticket number and
+  file, then the current period's timesheet folder), or, after `t`, `w` or `m`,
+  osheet's `--hours` table for today, this week or this month, busiest project
+  first. Moving in Entries or Days, or `esc` in Hours, brings the entry back.
+  While you add or edit an entry, the form takes the pane's place.
 
 ## Logging an entry
 
@@ -165,14 +160,15 @@ midnight.
 
 | Key | Action |
 |---|---|
-| `1` `2` `3` `4`, `tab` / `shift+tab` | jump to / cycle Days, Weeks, Entries, Hours |
+| `1` `2` `3`, `tab` / `shift+tab` | jump to / cycle Days, Entries, Entry (or Hours) |
+| `[` / `]` | previous / next week |
 | `j`/`k`, `↑`/`↓`, `g`/`G` | move, top, bottom |
-| `enter` / `l` | Days, Weeks: show in Entries. Entries: edit |
-| `h` / `esc` | Entries: back to Weeks |
+| `enter` / `l` | Days: show in Entries. Entries: edit |
+| `h` / `esc` | Entries: back to Days. Hours: back to the entry |
 | `n` | new entry |
 | `e` | edit the selected entry |
 | `d` | delete the selected entry (asks first) |
-| `t` / `w` / `m` | hours today, this week, this month (`←`/`→` in Hours) |
+| `t` / `w` / `m` | show hours today, this week, this month in the right pane (`←`/`→` to change) |
 | `y` | copy the current timesheet folder's path |
 | `r` | reload from disk |
 | `?` | all keys |

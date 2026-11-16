@@ -202,7 +202,10 @@ def scenario_main(sb, argv, label, in_dock=False):
         check(f"lazysheet · {WEEK[0]:%d}-{WEEK[6]:%d}" in s or f"lazysheet · {WEEK[0]:%d %b}" in s or not in_dock,
               f"{label}: tab title shows the current week", s)
         s = t.wait_for("written by osheet")
-        check("1h15" in s and "[4] Hours" in s, f"{label}: osheet's entry shows in Entries and Hours", s)
+        check("1h15" in s and "[2] Entries" in s, f"{label}: osheet's entry shows in Entries", s)
+        t.send("t")
+        s = t.wait_for("[3] Hours")
+        check("1h15" in s, f"{label}: t shows today's hours in the right pane", s)
         check(f"{WEEK[0]:%a %d %b}" in s, f"{label}: Days lists the current week", s)
 
         # --- log a new entry (q typed into the description goes to the input) ---
@@ -299,7 +302,7 @@ def scenario_main(sb, argv, label, in_dock=False):
 
         # --- edit osheet's entry: move the day, keep the ticket ---
         # entries are newest first: osheet's (Monday, first row) is the last one
-        t.send("3", "G")
+        t.send("2", "G")
         s = t.wait_for("written by osheet")
         t.send("e")
         s = t.wait_for("Which day")
@@ -331,8 +334,8 @@ def scenario_main(sb, argv, label, in_dock=False):
 
         # --- delete: n keeps it, y deletes it and the rows below move up ---
         before = sb.week_entries()
-        t.send("3", "g")
-        s = t.wait_for("[3] Entries")
+        t.send("2", "g")
+        s = t.wait_for("[2] Entries")
         t.send("d")
         s = t.wait_for("Delete this entry? (y/N)")
         t.send("n")
@@ -390,7 +393,7 @@ def scenario_main(sb, argv, label, in_dock=False):
         t.send("x")
         t.wait_gone("lazysheet — keys")
         t.set_size(100, 30)
-        s = t.wait_for(lambda s: "[4] Hours" in s and max(len(l) for l in s.splitlines()) <= 100)
+        s = t.wait_for(lambda s: "[2] Entries" in s and max(len(l) for l in s.splitlines()) <= 100)
         check(all("╮" in l or "│" in l or "╯" in l for l in s.splitlines()[1 if in_dock else 0:10] if l.strip()),
               f"{label}: layout fits after resize to 100x30", s)
         if in_dock:
